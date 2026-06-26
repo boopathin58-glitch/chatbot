@@ -229,6 +229,34 @@ a{color:var(--purple);text-decoration:none}a:hover{text-decoration:underline}
 .send-btn:disabled{background:var(--bg4);color:var(--text3);cursor:not-allowed}
 .input-disclaimer{max-width:760px;margin:7px auto 0;text-align:center;font-size:11px;color:var(--text3)}
 
+/* ── EXTRA INPUT OPTIONS ── */
+.input-top{display:flex;align-items:flex-end;gap:0}
+.input-left-btns{display:flex;align-items:center;gap:2px;padding:6px 6px 10px 8px;flex-shrink:0}
+.input-icon-btn{width:32px;height:32px;border-radius:8px;background:transparent;border:none;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:background .15s,color .15s;position:relative}
+.input-icon-btn:hover{background:var(--bg3);color:var(--text2)}
+.input-icon-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.attach-menu{position:absolute;bottom:46px;left:0;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:6px;display:none;flex-direction:column;gap:2px;min-width:180px;z-index:50;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.attach-menu.show{display:flex}
+.attach-menu-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);border:none;background:transparent;font-family:var(--font-body);transition:background .15s;text-align:left;width:100%;position:relative}
+.attach-menu-item:hover{background:var(--bg3);color:var(--text)}
+.attach-menu-item i{font-size:15px;width:18px;text-align:center}
+.attach-menu-item input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.attach-menu-divider{height:1px;background:var(--border);margin:4px 0}
+
+/* Preview area */
+.file-preview-area{display:none;flex-wrap:wrap;gap:8px;padding:8px 12px 0;border-top:1px solid var(--border);margin-top:4px}
+.file-preview-area.show{display:flex}
+.file-preview-item{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text2);position:relative;max-width:200px}
+.file-preview-item img{width:36px;height:36px;border-radius:5px;object-fit:cover}
+.file-preview-item .file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.file-remove-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px;flex-shrink:0}
+.file-remove-btn:hover{color:var(--red)}
+.img-preview-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover}
+
+/* Voice recording */
+.voice-recording{animation:voice-pulse 1s infinite}
+@keyframes voice-pulse{0%,100%{color:#f43f5e}50%{color:#ff8c94}}
+
 /* SECURE BADGE */
 .secure-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green);padding:6px 12px;background:rgba(62,207,142,0.08);border-radius:100px;border:1px solid rgba(62,207,142,0.2);margin:10px 12px 0}
 
@@ -744,14 +772,64 @@ a{color:var(--purple);text-decoration:none}a:hover{text-decoration:underline}
       <div id="messages" class="messages"></div>
     </div>
     <div class="input-section">
-      <div class="input-box">
-        <textarea id="user-input" placeholder="Ask anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
-        <div class="input-actions">
-          <span class="char-hint" id="char-hint"></span>
-          <button class="send-btn" id="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+      <div class="input-box" id="input-box">
+
+        <!-- File preview area -->
+        <div class="file-preview-area" id="file-preview-area"></div>
+
+        <!-- Main input row -->
+        <div class="input-top">
+          <!-- Left buttons: attach -->
+          <div class="input-left-btns" style="position:relative;">
+            <button class="input-icon-btn" id="attach-btn" onclick="toggleAttachMenu(event)" title="Attach files">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <!-- Attach dropdown menu -->
+            <div class="attach-menu" id="attach-menu">
+              <button class="attach-menu-item" onclick="triggerFileInput('any')">
+                <i class="fa-solid fa-file" style="color:var(--purple)"></i>
+                Upload file
+                <input type="file" id="file-input-any" multiple accept=".pdf,.txt,.doc,.docx,.csv,.json,.py,.js,.html,.css,.md" onchange="handleFileSelect(event,'file')"/>
+              </button>
+              <button class="attach-menu-item" onclick="triggerFileInput('image')">
+                <i class="fa-solid fa-image" style="color:var(--blue)"></i>
+                Upload image
+                <input type="file" id="file-input-image" multiple accept="image/*" onchange="handleFileSelect(event,'image')"/>
+              </button>
+              <div class="attach-menu-divider"></div>
+              <button class="attach-menu-item" onclick="startVoice()">
+                <i class="fa-solid fa-microphone" style="color:var(--green)"></i>
+                Voice input
+              </button>
+              <button class="attach-menu-item" onclick="clearChat()">
+                <i class="fa-solid fa-broom" style="color:var(--orange)"></i>
+                Clear chat
+              </button>
+              <button class="attach-menu-item" onclick="exportChat()">
+                <i class="fa-solid fa-download" style="color:var(--teal)"></i>
+                Export chat
+              </button>
+            </div>
+          </div>
+
+          <textarea id="user-input" placeholder="Ask anything..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)" style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-size:15px;font-family:var(--font-body);line-height:1.6;resize:none;padding:12px 8px 12px 0;max-height:200px;overflow-y:auto;"></textarea>
+
+          <!-- Right buttons -->
+          <div class="input-left-btns">
+            <button class="input-icon-btn" id="voice-btn" onclick="startVoice()" title="Voice input">
+              <i class="fa-solid fa-microphone" id="mic-icon"></i>
+            </button>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
         </div>
+
       </div>
-      <p class="input-disclaimer">AI can make mistakes. Verify important information.</p>
+      <p class="input-disclaimer">
+        <span class="char-hint" id="char-hint"></span>
+        AI can make mistakes. Verify important information.
+      </p>
     </div>
   </main>
 </div>
@@ -770,7 +848,7 @@ let currentConvoId=null,messages=[],isBusy=false;
 
 // ---- Replace with your real Google OAuth Client ID from Google Cloud Console ----
 // https://console.cloud.google.com/apis/credentials  →  Create OAuth client ID  →  Web application
-const GOOGLE_CLIENT_ID = '647105566590-u3g41j10vnvrt27tgg4ae8p14f0h5qtf.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
 
 function simpleHash(str){let h=0;for(let i=0;i<str.length;i++){h=(h<<5)-h+str.charCodeAt(i);h|=0;}return h.toString(36);}
 function getUsers(){try{return JSON.parse(localStorage.getItem('nexus_users')||'{}');}catch(e){return{};}}
@@ -1030,6 +1108,116 @@ function renderHistory(){
 function clearHistory(){if(!confirm('Clear all history?'))return;conversations=[];localStorage.removeItem('nexus_convos');newChat();}
 function sendStarter(t){document.getElementById('user-input').value=t;sendMessage();}
 
+// ── ATTACH MENU ──
+let attachedFiles = [];
+let isRecording = false;
+let recognition = null;
+
+function toggleAttachMenu(e){
+  e.stopPropagation();
+  const menu = document.getElementById('attach-menu');
+  menu.classList.toggle('show');
+}
+document.addEventListener('click', ()=>{
+  document.getElementById('attach-menu')?.classList.remove('show');
+});
+
+function triggerFileInput(type){
+  document.getElementById('attach-menu').classList.remove('show');
+  if(type==='image') document.getElementById('file-input-image').click();
+  else document.getElementById('file-input-any').click();
+}
+
+function handleFileSelect(e, type){
+  const files = Array.from(e.target.files);
+  if(!files.length) return;
+  files.forEach(file => {
+    const id = 'f_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const obj = {id, name:file.name, type, size:file.size, content:ev.target.result, file};
+      attachedFiles.push(obj);
+      renderFilePreviews();
+    };
+    if(type==='image') reader.readAsDataURL(file);
+    else reader.readAsText(file);
+  });
+  e.target.value='';
+  document.getElementById('attach-menu').classList.remove('show');
+}
+
+function renderFilePreviews(){
+  const area = document.getElementById('file-preview-area');
+  if(!attachedFiles.length){ area.className='file-preview-area'; area.innerHTML=''; return; }
+  area.className='file-preview-area show';
+  area.innerHTML = attachedFiles.map(f => {
+    if(f.type==='image'){
+      return `<div class="file-preview-item" id="${f.id}">
+        <img class="img-preview-thumb" src="${f.content}" alt="${esc(f.name)}"/>
+        <span class="file-name">${esc(f.name)}</span>
+        <button class="file-remove-btn" onclick="removeFile('${f.id}')"><i class="fa-solid fa-xmark"></i></button>
+      </div>`;
+    } else {
+      const icon = f.name.endsWith('.pdf')?'fa-file-pdf':f.name.endsWith('.py')?'fa-file-code':f.name.endsWith('.js')||f.name.endsWith('.html')?'fa-file-code':'fa-file-lines';
+      const color = f.name.endsWith('.pdf')?'#f43f5e':f.name.endsWith('.py')||f.name.endsWith('.js')?'#4a9eff':'#9090a8';
+      return `<div class="file-preview-item" id="${f.id}">
+        <i class="fa-solid ${icon}" style="font-size:20px;color:${color};flex-shrink:0"></i>
+        <span class="file-name">${esc(f.name)}</span>
+        <button class="file-remove-btn" onclick="removeFile('${f.id}')"><i class="fa-solid fa-xmark"></i></button>
+      </div>`;
+    }
+  }).join('');
+}
+
+function removeFile(id){
+  attachedFiles = attachedFiles.filter(f=>f.id!==id);
+  renderFilePreviews();
+}
+
+// ── VOICE INPUT ──
+function startVoice(){
+  document.getElementById('attach-menu').classList.remove('show');
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    alert('Voice input is not supported in this browser. Try Chrome!'); return;
+  }
+  if(isRecording){ stopVoice(); return; }
+  const SpeechRecognition = window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  isRecording = true;
+  document.getElementById('mic-icon').className='fa-solid fa-stop voice-recording';
+  document.getElementById('voice-btn').style.color='#f43f5e';
+  const inp = document.getElementById('user-input');
+  recognition.onresult = (e)=>{
+    const transcript = Array.from(e.results).map(r=>r[0].transcript).join('');
+    inp.value = transcript;
+    autoResize(inp);
+  };
+  recognition.onend = ()=>{ stopVoice(); };
+  recognition.onerror = ()=>{ stopVoice(); };
+  recognition.start();
+}
+function stopVoice(){
+  isRecording = false;
+  document.getElementById('mic-icon').className='fa-solid fa-microphone';
+  document.getElementById('voice-btn').style.color='';
+  if(recognition){ try{recognition.stop();}catch(e){} recognition=null; }
+}
+
+// ── CLEAR CHAT ──
+function clearChat(){
+  document.getElementById('attach-menu').classList.remove('show');
+  if(!confirm('Clear this chat?')) return;
+  messages=[];
+  attachedFiles=[];
+  renderFilePreviews();
+  const cv=conversations.find(c=>c.id===currentConvoId);
+  if(cv){cv.msgs=[];cv.title='New chat';saveConvos();renderHistory();}
+  resetUI();
+}
+
 async function sendMessage(){
   if(isBusy)return;
   const inp=document.getElementById('user-input');
@@ -1077,6 +1265,44 @@ function appendMsg(role,content,ts,isErr){
   cd.appendChild(b);cd.appendChild(t);row.appendChild(av);row.appendChild(cd);msgs.appendChild(row);
   document.getElementById('messages-wrap').scrollTop=99999;
 }
+function appendMsgWithFiles(role, content, ts, files){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row '+role;
+  const av=document.createElement('div');av.className='msg-av '+role;
+  av.innerHTML=role==='bot'?'<i class="fa-solid fa-bolt"></i>':'U';
+  const cd=document.createElement('div');cd.className='msg-content';
+
+  // File previews above bubble
+  if(files && files.length){
+    const prevDiv=document.createElement('div');
+    prevDiv.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;justify-content:'+(role==='user'?'flex-end':'flex-start');
+    files.forEach(f=>{
+      if(f.type==='image'){
+        const img=document.createElement('img');
+        img.src=f.content;img.alt=f.name;
+        img.style.cssText='width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid var(--border2)';
+        prevDiv.appendChild(img);
+      } else {
+        const chip=document.createElement('div');
+        chip.style.cssText='display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text2)';
+        chip.innerHTML=`<i class="fa-solid fa-file-lines" style="color:var(--purple)"></i><span>${esc(f.name)}</span>`;
+        prevDiv.appendChild(chip);
+      }
+    });
+    cd.appendChild(prevDiv);
+  }
+
+  if(content){
+    const b=document.createElement('div');b.className='bubble '+role;
+    b.innerHTML=role==='bot'?md(content):esc(content).replace(/\n/g,'<br>');
+    cd.appendChild(b);
+  }
+  const t=document.createElement('div');t.className='msg-time';
+  t.textContent=new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  cd.appendChild(t);row.appendChild(av);row.appendChild(cd);msgs.appendChild(row);
+  document.getElementById('messages-wrap').scrollTop=99999;
+}
+
 function showTyping(){
   const msgs=document.getElementById('messages');const id='t'+Date.now();
   const r=document.createElement('div');r.className='typing-row';r.id=id;

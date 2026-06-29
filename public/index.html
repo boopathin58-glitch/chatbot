@@ -776,11 +776,54 @@ function startVoice(){
 function clearCurrentChat(){if(!confirm('Clear this chat?'))return;messages=[];attachedFiles=[];renderPreviews();const cv=conversations.find(c=>c.id===currentConvoId);if(cv){cv.msgs=[];cv.title='New chat';saveConvos();renderHistory();}resetUI();}
 
 // ══ SEND MESSAGE ══
+// ══ IMAGE GENERATION via Pollinations AI (free, no key needed) ══
+function isImageRequest(txt){
+  const t=txt.toLowerCase();
+  return/(generate|create|draw|make|show|give me|produce|paint|design|illustrate).*(image|photo|picture|painting|artwork|illustration|portrait|wallpaper|drawing|sketch)/i.test(t)||
+         /(image|photo|picture|painting|artwork|illustration|portrait|wallpaper|drawing|sketch).*(of|showing|with|about|depicting|for)/i.test(t)||
+         /^(draw|paint|create|generate|show|make|design)\s/i.test(t);
+}
+
+async function generateImage(prompt){
+  const encoded=encodeURIComponent(prompt.replace(/generate|create|draw|make|show me|give me|produce|paint|design|illustrate|an image of|a photo of|a picture of|a painting of|a drawing of/gi,'').trim());
+  const url=`https://image.pollinations.ai/prompt/${encoded}?width=768&height=512&nologo=true&model=flux`;
+  return url;
+}
+
 async function sendMessage(){
   if(isBusy)return;
   const inp=document.getElementById('user-input');
   const txt=inp.value.trim();
   if(!txt&&!attachedFiles.length)return;
+
+  // ── Image generation ──
+  if(txt && isImageRequest(txt) && !attachedFiles.length){
+    const w=document.getElementById('welcome-state');if(w)w.remove();
+    inp.value='';inp.style.height='auto';
+    const ts=Date.now();
+    appendMsg('user',txt,ts);
+    messages.push({role:'user',content:txt});
+    updateTitle(txt);
+    const cv=conversations.find(c=>c.id===currentConvoId);
+    if(cv){cv.msgs.push({role:'user',content:txt,ts});saveConvos();}
+    isBusy=true;document.getElementById('send-btn').disabled=true;
+    const tid=showTyping();
+    try{
+      const imgUrl=await generateImage(txt);
+      removeTyping(tid);
+      const replyTs=Date.now();
+      // Show image in chat
+      const imgHtml=`<img src="${imgUrl}" alt="${esc(txt)}" style="max-width:100%;border-radius:12px;margin-top:8px;border:1px solid var(--border2)" onload="document.getElementById('messages-wrap').scrollTop=99999" onerror="this.style.display='none';this.nextSibling.style.display='block'"/><span style="display:none;color:var(--text2);font-size:13px">Image generation failed. Try a different prompt.</span><br><span style="font-size:11px;color:var(--text3)">Generated with Pollinations AI</span>`;
+      appendRawMsg('bot',`🎨 Here's your generated image:
+
+${imgHtml}`,replyTs);
+      const replyText=`[Generated image for: ${txt}]`;
+      messages.push({role:'assistant',content:replyText});
+      if(cv){cv.msgs.push({role:'assistant',content:replyText,ts:replyTs});saveConvos();}
+    }catch(e){removeTyping(tid);appendMsg('bot','**Error generating image:** '+e.message,Date.now(),true);}
+    isBusy=false;document.getElementById('send-btn').disabled=false;
+    return;
+  }
 
   // Build full message with file contents
   let fullMsg=txt;
@@ -837,6 +880,17 @@ function appendMsgWithFiles(role,content,ts,files){
   if(content){const b=document.createElement('div');b.className='bubble '+role;b.innerHTML=role==='bot'?md(content):esc(content).replace(/\n/g,'<br>');cd.appendChild(b);}
   const t=document.createElement('div');t.className='msg-time';t.textContent=new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   cd.appendChild(t);row.appendChild(av);row.appendChild(cd);msgs.appendChild(row);
+  document.getElementById('messages-wrap').scrollTop=99999;
+}
+function appendRawMsg(role,htmlContent,ts){
+  const msgs=document.getElementById('messages');
+  const row=document.createElement('div');row.className='msg-row '+role;
+  const av=document.createElement('div');av.className='msg-av '+role;av.innerHTML=role==='bot'?'<i class="fa-solid fa-bolt"></i>':'U';
+  const cd=document.createElement('div');cd.className='msg-content';
+  const b=document.createElement('div');b.className='bubble '+role;
+  b.innerHTML=htmlContent;
+  const t=document.createElement('div');t.className='msg-time';t.textContent=new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  cd.appendChild(b);cd.appendChild(t);row.appendChild(av);row.appendChild(cd);msgs.appendChild(row);
   document.getElementById('messages-wrap').scrollTop=99999;
 }
 function appendMsg(role,content,ts,isErr){

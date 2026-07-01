@@ -13,7 +13,7 @@ if (!GROQ_API_KEY || GROQ_API_KEY === 'gsk_YOUR_GROQ_KEY_HERE') {
   process.exit(1);
 }
 
-app.use(cors({ origin: `http://localhost:${PORT}` }));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Serve frontend
